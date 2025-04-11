@@ -1,0 +1,6 @@
+dataset_name: "wikitext-2-raw-v1"
+model_name: "distilgpt2"
+max_length: 128
+num_workers: 8
+pin_memory: true
+min_text_length: 50
