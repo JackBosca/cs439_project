@@ -1,0 +1,51 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Jupyter Notebook files
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# Environment and virtualenv
+.env/
+.venv/
+venv/
+env/
+ENV/
+*.env
+
+# Python packaging and distribution
+build/
+dist/
+*.egg-info/
+*.egg
+*.whl
+
+# Logs and databases
+*.log
+*.sqlite
+*.db
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Profiling and debug files
+*.prof
+*.profile
+
+# PyCharm-specific
+.idea/
+*.iml
+
+# VS Code-specific
+.vscode/
