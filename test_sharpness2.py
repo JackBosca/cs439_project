@@ -3,7 +3,7 @@
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from data.preprocessing import load_and_preprocess_data
-from sharpness.sharpness import compute_hessian_sharpness
+from sharpness import compute_hessian_sharpness
 
 # Create a simple config
 class Config:
