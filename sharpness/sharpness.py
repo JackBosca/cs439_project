@@ -77,6 +77,14 @@ def compute_epsilon_sharpness(
 
 ## Hessian Eigenvalues sharpness
 def hessian_vector_product(loss, params, v):
+    """Compute the Hessian-vector product.
+    Args:
+        loss: The loss value.
+        params: The model parameters.
+        v: The vector to compute the Hessian-vector product with.
+    Returns:
+        hessian_vector: The Hessian-vector product.
+    """
     grads = torch.autograd.grad(loss, params, create_graph=True)
     grad_vector = parameters_to_vector(grads)
     grad_dot_v = torch.dot(grad_vector, v)
@@ -84,6 +92,17 @@ def hessian_vector_product(loss, params, v):
     return parameters_to_vector(hessian_vector)
 
 def batch_averaged_hvp(model, dataloader, params, v, device, num_batches=3):
+    """Compute the batch-averaged Hessian-vector product.
+    Args:
+        model: The model to evaluate. (e.g., DistilGPT2)
+        dataloader: DataLoader for the dataset.
+        params: The model parameters.
+        v: The vector to compute the Hessian-vector product with.
+        device: Device to perform computations on. ('cuda' or 'cpu')
+        num_batches: Number of batches to average over.
+    Returns:
+        hv_acc: The averaged Hessian-vector product.
+    """
     hv_acc = torch.zeros_like(v, device=device) #Batches Hv
     it = iter(dataloader)
     for _ in range(num_batches):
@@ -111,32 +130,77 @@ def batch_averaged_hvp(model, dataloader, params, v, device, num_batches=3):
     return hv_acc / num_batches
 
 def power_iteration_hessian(model, dataloader, device,
-                            num_iters=30, num_batches=3):
+                            num_iters=30, num_batches=3, tol=1e-2):
     """Compute the largest eigenvalue of the Hessian using power iteration.
     Args:
         model: The model to evaluate. (e.g., DistilGPT2)
         dataloader: DataLoader for the dataset.
         device: Device to perform computations on. ('cuda' or 'cpu')
-        num_iters: Number of iterations for power iteration.
-        num_batches: Number of batches to average over.
+        num_iters: Max number of iterations for power iteration.
+        num_batches: Number of batches to average over per iteration.
+        tol: Tolerance for convergence of eigenvalue.
     Returns:
         lambda_max: The largest eigenvalue of the Hessian.
         v: The corresponding eigenvector.
     """
-    # Initialize random vector
     model.eval()
     params = list(model.parameters())
-    dim    = sum(p.numel() for p in params)
-    v      = torch.randn(dim, device=device)
-    v     /= v.norm()
-    # Power iteration
-    hv_norm = None
-    for _ in range(num_iters):
-        hv = batch_averaged_hvp(model, dataloader, params,
-                                    v, device, num_batches)
+    dim = sum(p.numel() for p in params)
+    v = torch.randn(dim, device=device)
+    v /= v.norm()
+
+    prev_hv_norm = None
+    for i in range(num_iters):
+        hv = batch_averaged_hvp(model, dataloader, params, v, device, num_batches)
         hv_norm = hv.norm()
         v = hv / (hv_norm + 1e-12)
 
-    # hv_norm ≈ λ_max, v is the top eigenvector
+        if prev_hv_norm is not None and abs(hv_norm.item() - prev_hv_norm) < tol:
+            print(f"Converged at iteration {i + 1} with eigenvalue ≈ {hv_norm.item():.4f}")
+            break
+
+        prev_hv_norm = hv_norm.item()
+
     return hv_norm.item(), v
 
+
+def compute_epsilon_hessian_sharpness(
+    model, 
+    dataloader, 
+    loss_fn, 
+    v,
+    epsilon=1e-3, 
+    num_samples=10, 
+    device='cuda'
+):
+    """
+    Compute the sharpness of the model by evaluating the loss on perturbed parameters.
+    Args:
+        model: The model to evaluate. (e.g., DistilGPT2)
+        dataloader: DataLoader for the dataset.
+        loss_fn: Loss function to use.
+        epsilon: Perturbation size.
+        num_samples: Number of samples to average over.
+        device: Device to perform computations on. ('cuda' or 'cpu')
+    Returns:
+        sharpness: The maximum relative increase in loss due to perturbations.
+        base_loss: The base loss of the model.
+    """
+    model.eval()
+    theta = parameters_to_vector(model.parameters()).detach().to(device)
+    base_loss = evaluate_loss(model, dataloader, loss_fn, device)
+
+    sharpness_values = []
+    for _ in range(num_samples):
+        delta = epsilon * v
+
+        perturbed_theta = theta + delta
+        vector_to_parameters(perturbed_theta, model.parameters())
+
+        perturbed_loss = evaluate_loss(model, dataloader, loss_fn, device)
+        rel_increase = ((perturbed_loss - base_loss) / (1 + base_loss)) * 100
+        sharpness_values.append(rel_increase)
+
+    # Restore original weights
+    vector_to_parameters(theta, model.parameters())
+    return max(sharpness_values), base_loss
