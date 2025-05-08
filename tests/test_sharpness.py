@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from sharpness.sharpness import compute_epsilon_hessian_sharpness, power_iteration_hessian
 import torch.nn.functional as F
 from data.preprocessing import load_and_preprocess_data
