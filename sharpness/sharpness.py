@@ -145,6 +145,14 @@ def power_iteration_hessian(model, dataloader, device,
     """
     model.eval()
     params = list(model.parameters())
+
+    # Normalize the parameters layer by layer
+    for name, param in model.named_parameters():
+        if param.requires_grad and param.dim() > 1:
+            norm = param.data.norm()
+            if norm > 0:
+                param.data = param.data / norm
+
     dim = sum(p.numel() for p in params)
     v = torch.randn(dim, device=device)
     v /= v.norm()
@@ -179,6 +187,7 @@ def compute_epsilon_hessian_sharpness(
         model: The model to evaluate. (e.g., DistilGPT2)
         dataloader: DataLoader for the dataset.
         loss_fn: Loss function to use.
+        v: The largest eigenvector of the Hessian.
         epsilon: Perturbation size.
         num_samples: Number of samples to average over.
         device: Device to perform computations on. ('cuda' or 'cpu')
@@ -192,7 +201,7 @@ def compute_epsilon_hessian_sharpness(
 
     sharpness_values = []
     for _ in range(num_samples):
-        delta = epsilon * v
+        delta = epsilon * v 
 
         perturbed_theta = theta + delta
         vector_to_parameters(perturbed_theta, model.parameters())
