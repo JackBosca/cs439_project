@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from sharpness.sharpness import compute_epsilon_sharpness, power_iteration_hessian
+from sharpness.sharpness import compute_epsilon_hessian_sharpness, power_iteration_hessian
 import torch.nn.functional as F
 from data.preprocessing import load_and_preprocess_data
 import yaml
@@ -56,23 +56,24 @@ NUM_SAMPLES = 25
 NUM_ITERS = 30
 NUM_BATCHES = len(val_dataloader)
 
-print(f"Computing ε-sharpness with ε={EPS} and {NUM_SAMPLES} samples...")
-sharpness, base_loss = compute_epsilon_sharpness(
-    model=model,
-    dataloader=val_dataloader,
-    loss_fn=F.cross_entropy,
-    epsilon = EPS,
-    num_samples = NUM_SAMPLES,
-    device=device
-)
-
 print(f"Computing Hessian sharpness with {NUM_ITERS} iterations and {NUM_BATCHES} batches...")
 hessian_sharpness, v_max = power_iteration_hessian(
     model=model,
     dataloader=val_dataloader,
     device=device, 
-    num_iters = NUM_SAMPLES,
+    num_iters = 50,
     num_batches=NUM_BATCHES
+)
+
+print(f"Computing ε-sharpness with ε={EPS} and {NUM_SAMPLES} samples...")
+sharpness, base_loss = compute_epsilon_hessian_sharpness(
+    model=model,
+    dataloader=val_dataloader,
+    loss_fn=F.cross_entropy,
+    v=v_max,
+    epsilon = EPS,
+    num_samples = NUM_SAMPLES,
+    device=device
 )
 
 print(f"\nBase loss: {base_loss:.4f}")
