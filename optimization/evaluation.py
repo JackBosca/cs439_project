@@ -1,37 +1,23 @@
 import torch
 from tqdm import tqdm
 
-# def compute_loss(model, dataloader, device):
-#     model.eval()
-#     total_loss = 0.0
-#     total_items = 0
-    
-#     with torch.no_grad():
-#         for batch in dataloader:
-#             batch = batch.to(device)
-#             outputs = model(batch, labels=batch)
-#             loss = outputs.loss
-#             total_loss += loss.item() * batch.size(0)  # Sum losses
-#             total_items += batch.size(0)  # Count items
-    
-#     # Check empty dataloader
-#     if total_items == 0:
-#         return float('nan'), float('nan')  
-    
-#     avg_loss = total_loss / total_items  # Average loss per item
-#     perplexity = torch.exp(torch.tensor(avg_loss)).item()  # Perplexity
-    
-#     return avg_loss, perplexity
-
 @torch.no_grad()
-def compute_loss(
-    model,
-    dataloader,
-    device,
-    loss_fn=None,  # Optional custom loss function
-    return_perplexity=True
-):
+def compute_loss(model, dataloader, device, loss_fn=None, return_perplexity=True):
+    """
+    Compute the average loss of the model.
+    Args:
+        model: The model to evaluate. (e.g., DistilGPT2)
+        dataloader: DataLoader for the dataset.
+        loss_fn: Loss function to use. If None, the model's loss will be used.
+        device: Device to perform computations on. ('cuda' or 'cpu')
+        return_perplexity: If True, return perplexity as well.
+    Returns:
+        average_loss: The average loss of the model.
+        perplexity: The perplexity of the model (if return_perplexity is True).
+    """
     model.eval()
+
+    # Initialize total loss and tokens
     total_loss = 0.0
     total_tokens = 0
 
@@ -63,6 +49,7 @@ def compute_loss(
 
     avg_loss = total_loss / total_tokens
 
+    # Calculate perplexity if required
     if return_perplexity:
         perplexity = torch.exp(torch.tensor(avg_loss)).item()
         return avg_loss, perplexity
