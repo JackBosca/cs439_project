@@ -1,81 +1,81 @@
 import torch 
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
-from tqdm import tqdm
 
-@torch.no_grad() # avoid gradient tracking
-def evaluate_loss(model, dataloader, loss_fn, device):
-    """Compute the average loss of the model.
-    Args:
-        model: The model to evaluate. (e.g., DistilGPT2)
-        dataloader: DataLoader for the dataset. 
-        loss_fn: Loss function to use. 
-        device: Device to perform computations on. ('cuda' or 'cpu')
-    Returns:
-        average_loss: The average loss of the model.
-    """
-    model.eval()
-    total_loss = 0
-    total_tokens = 0
-    for batch in tqdm(dataloader, desc="Evaluating", leave=False):
-        batch = [x.to(device) for x in batch]
-        inputs = batch[0]
-        attention_mask = batch[1]
+from optimization.evaluation import compute_loss
 
-        inputs = inputs.to(device)
-        attention_mask = attention_mask.to(device)
-        if attention_mask is not None:
-            attention_mask = attention_mask.to(device)
+# @torch.no_grad() # avoid gradient tracking
+# def evaluate_loss(model, dataloader, loss_fn, device):
+#     """Compute the average loss of the model.
+#     Args:
+#         model: The model to evaluate. (e.g., DistilGPT2)
+#         dataloader: DataLoader for the dataset. 
+#         loss_fn: Loss function to use. 
+#         device: Device to perform computations on. ('cuda' or 'cpu')
+#     Returns:
+#         average_loss: The average loss of the model.
+#     """
+#     model.eval()
+#     total_loss = 0
+#     total_tokens = 0
+#     for batch in tqdm(dataloader, desc="Evaluating", leave=False):
+#         batch = [x.to(device) for x in batch]
+#         inputs = batch[0]
+#         attention_mask = batch[1]
 
-        outputs = model(inputs, attention_mask=attention_mask, labels=inputs)
-        loss = loss_fn(outputs.logits.view(-1, outputs.logits.size(-1)), inputs.view(-1))
-        total_loss += loss.item() * inputs.numel()
-        total_tokens += inputs.numel()
+#         inputs = inputs.to(device)
+#         attention_mask = attention_mask.to(device)
+#         if attention_mask is not None:
+#             attention_mask = attention_mask.to(device)
 
-    return total_loss / total_tokens
+#         outputs = model(inputs, attention_mask=attention_mask, labels=inputs)
+#         loss = loss_fn(outputs.logits.view(-1, outputs.logits.size(-1)), inputs.view(-1))
+#         total_loss += loss.item() * inputs.numel()
+#         total_tokens += inputs.numel()
 
-## Epsilon sharpness, based on https://arxiv.org/abs/2004.01461
-def compute_epsilon_sharpness(
-    model, 
-    dataloader, 
-    loss_fn, 
-    epsilon=1e-3, 
-    num_samples=10, 
-    device='cuda'
-):
-    """
-    Compute the sharpness of the model by evaluating the loss on perturbed parameters.
-    Args:
-        model: The model to evaluate. (e.g., DistilGPT2)
-        dataloader: DataLoader for the dataset.
-        loss_fn: Loss function to use.
-        epsilon: Perturbation size.
-        num_samples: Number of samples to average over.
-        device: Device to perform computations on. ('cuda' or 'cpu')
-    Returns:
-        sharpness: The maximum relative increase in loss due to perturbations.
-        base_loss: The base loss of the model.
-    """
-    model.eval()
-    theta = parameters_to_vector(model.parameters()).detach().to(device)
-    base_loss = evaluate_loss(model, dataloader, loss_fn, device)
+#     return total_loss / total_tokens
 
-    sharpness_values = []
-    for _ in range(num_samples):
-        delta = torch.randn_like(theta)
-        delta = epsilon * delta / delta.norm()
+# ## Epsilon sharpness, based on https://arxiv.org/abs/2004.01461
+# def compute_epsilon_sharpness(
+#     model, 
+#     dataloader, 
+#     loss_fn, 
+#     epsilon=1e-3, 
+#     num_samples=10, 
+#     device='cuda'
+# ):
+#     """
+#     Compute the sharpness of the model by evaluating the loss on perturbed parameters.
+#     Args:
+#         model: The model to evaluate. (e.g., DistilGPT2)
+#         dataloader: DataLoader for the dataset.
+#         loss_fn: Loss function to use.
+#         epsilon: Perturbation size.
+#         num_samples: Number of samples to average over.
+#         device: Device to perform computations on. ('cuda' or 'cpu')
+#     Returns:
+#         sharpness: The maximum relative increase in loss due to perturbations.
+#         base_loss: The base loss of the model.
+#     """
+#     model.eval()
+#     theta = parameters_to_vector(model.parameters()).detach().to(device)
+#     base_loss = evaluate_loss(model, dataloader, loss_fn, device)
 
-        perturbed_theta = theta + delta
-        vector_to_parameters(perturbed_theta, model.parameters())
+#     sharpness_values = []
+#     for _ in range(num_samples):
+#         delta = torch.randn_like(theta)
+#         delta = epsilon * delta / delta.norm()
 
-        perturbed_loss = evaluate_loss(model, dataloader, loss_fn, device)
-        rel_increase = ((perturbed_loss - base_loss) / (1 + base_loss)) * 100
-        sharpness_values.append(rel_increase)
+#         perturbed_theta = theta + delta
+#         vector_to_parameters(perturbed_theta, model.parameters())
 
-    # Restore original weights
-    vector_to_parameters(theta, model.parameters())
-    return max(sharpness_values), base_loss
+#         perturbed_loss = evaluate_loss(model, dataloader, loss_fn, device)
+#         rel_increase = ((perturbed_loss - base_loss) / (1 + base_loss)) * 100
+#         sharpness_values.append(rel_increase)
 
-## Hessian Eigenvalues sharpness
+#     # Restore original weights
+#     vector_to_parameters(theta, model.parameters())
+#     return max(sharpness_values), base_loss
+
 def hessian_vector_product(loss, params, v):
     """Compute the Hessian-vector product.
     Args:
@@ -85,10 +85,19 @@ def hessian_vector_product(loss, params, v):
     Returns:
         hessian_vector: The Hessian-vector product.
     """
+    # Compute the gradient of the loss with respect to the parameters
     grads = torch.autograd.grad(loss, params, create_graph=True)
+
+    # Convert the gradients to a vector
     grad_vector = parameters_to_vector(grads)
+
+    # Compute the dot product of the gradient vector and the vector v
     grad_dot_v = torch.dot(grad_vector, v)
+
+    # Compute the Hessian-vector product
     hessian_vector = torch.autograd.grad(grad_dot_v, params, retain_graph=True)
+
+    # Convert the Hessian-vector product to a vector
     return parameters_to_vector(hessian_vector)
 
 def batch_averaged_hvp(model, dataloader, params, v, device, num_batches=3):
@@ -103,19 +112,23 @@ def batch_averaged_hvp(model, dataloader, params, v, device, num_batches=3):
     Returns:
         hv_acc: The averaged Hessian-vector product.
     """
-    hv_acc = torch.zeros_like(v, device=device) #Batches Hv
+    # Initialize the Hessian-vector product accumulator
+    hv_acc = torch.zeros_like(v, device=device)
     it = iter(dataloader)
     for _ in range(num_batches):
         try:
             inputs, attention_mask = next(it)
         except StopIteration:
-            it = iter(dataloader) # reset iterator
+            # If we reach the end of the iterator, reset it
+            it = iter(dataloader)
             inputs, attention_mask = next(it)
+
+        # Move inputs and attention_mask to the specified device
         inputs = inputs.to(device)
         attention_mask = attention_mask.to(device)
         
-        # Had issues with gradient checkpointing and flash attention so disabled it
-        with torch.backends.cuda.sdp_kernel(
+        # Disable flash attention and math for the model
+        with torch.nn.attention.sdpa_kernel(
                 enable_flash=False,
                 enable_math=True,
                 enable_mem_efficient=False
@@ -125,8 +138,14 @@ def batch_averaged_hvp(model, dataloader, params, v, device, num_batches=3):
                 attention_mask=attention_mask,
                 labels=inputs
             )
+
+            # Compute the loss
             loss = outputs.loss
+
+        # Compute the Hessian-vector product
         hv_acc += hessian_vector_product(loss, params, v)
+
+    # Average the Hessian-vector product over the number of batches
     return hv_acc / num_batches
 
 def power_iteration_hessian(model, dataloader, device,
@@ -147,40 +166,38 @@ def power_iteration_hessian(model, dataloader, device,
     params = list(model.parameters())
 
     # Normalize the parameters layer by layer
-    for name, param in model.named_parameters():
+    for _, param in model.named_parameters():
         if param.requires_grad and param.dim() > 1:
             norm = param.data.norm()
             if norm > 0:
                 param.data = param.data / norm
 
+    # Sum the number of elements in all parameters
     dim = sum(p.numel() for p in params)
+
+    # Initialize a random vector
     v = torch.randn(dim, device=device)
     v /= v.norm()
 
     prev_hv_norm = None
     for i in range(num_iters):
+        # Compute the Hessian-vector product and normalize the vector
         hv = batch_averaged_hvp(model, dataloader, params, v, device, num_batches)
         hv_norm = hv.norm()
         v = hv / (hv_norm + 1e-12)
 
+        # Check for convergence
         if prev_hv_norm is not None and abs(hv_norm.item() - prev_hv_norm) < tol:
             print(f"Converged at iteration {i + 1} with eigenvalue ≈ {hv_norm.item():.4f}")
             break
 
+        # Save the current Hessian-vector product norm for the next iteration
         prev_hv_norm = hv_norm.item()
 
     return hv_norm.item(), v
 
-
-def compute_epsilon_hessian_sharpness(
-    model, 
-    dataloader, 
-    loss_fn, 
-    v,
-    epsilon=1e-3, 
-    num_samples=10, 
-    device='cuda'
-):
+def compute_epsilon_hessian_sharpness(model, dataloader, loss_fn, v,
+                                      epsilon=1e-3, num_samples=10, device='cpu'):
     """
     Compute the sharpness of the model by evaluating the loss on perturbed parameters.
     Args:
@@ -196,20 +213,33 @@ def compute_epsilon_hessian_sharpness(
         base_loss: The base loss of the model.
     """
     model.eval()
+
+    # Convert the model parameters to a vector
     theta = parameters_to_vector(model.parameters()).detach().to(device)
-    base_loss = evaluate_loss(model, dataloader, loss_fn, device)
+
+    ## Compute the base loss
+    # base_loss = evaluate_loss(model, dataloader, loss_fn, device)
+    base_loss = compute_loss(model, dataloader, device, loss_fn=loss_fn, return_perplexity=False)
 
     sharpness_values = []
     for _ in range(num_samples):
+        # Generate a random perturbation vector
         delta = epsilon * v 
-
         perturbed_theta = theta + delta
+
+        # Convert the perturbed vector back to model parameters
         vector_to_parameters(perturbed_theta, model.parameters())
 
-        perturbed_loss = evaluate_loss(model, dataloader, loss_fn, device)
+        # Compute the perturbed loss
+        # perturbed_loss = evaluate_loss(model, dataloader, loss_fn, device)
+        perturbed_loss = compute_loss(model, dataloader, device, loss_fn=loss_fn, return_perplexity=False)
+
+        # Compute the relative increase in loss and append to the list
         rel_increase = ((perturbed_loss - base_loss) / (1 + base_loss)) * 100
         sharpness_values.append(rel_increase)
 
     # Restore original weights
     vector_to_parameters(theta, model.parameters())
+
+    # Return the maximum sharpness value and the base loss
     return max(sharpness_values), base_loss
