@@ -2,7 +2,7 @@ import torch
 from tqdm import tqdm
 
 @torch.no_grad()
-def compute_loss(model, dataloader, device, loss_fn=None, return_perplexity=True):
+def compute_loss(model, dataloader, device, loss_fn=None, return_perplexity=True, max_batches=None):
     """
     Compute the average loss of the model.
     Args:
@@ -11,6 +11,7 @@ def compute_loss(model, dataloader, device, loss_fn=None, return_perplexity=True
         loss_fn: Loss function to use. If None, the model's loss will be used.
         device: Device to perform computations on. ('cuda' or 'cpu')
         return_perplexity: If True, return perplexity as well.
+        max_batches: Maximum number of batches to evaluate. If None, evaluate all batches.
     Returns:
         average_loss: The average loss of the model.
         perplexity: The perplexity of the model (if return_perplexity is True).
@@ -21,7 +22,11 @@ def compute_loss(model, dataloader, device, loss_fn=None, return_perplexity=True
     total_loss = 0.0
     total_tokens = 0
 
-    for batch in tqdm(dataloader, desc="Evaluating", leave=False):
+    for i, batch in enumerate(tqdm(dataloader, desc="Evaluating", leave=False)):
+        # Check if max_batches is reached
+        if max_batches is not None and i >= max_batches:
+            break
+
         # Unpack batch
         if isinstance(batch, (list, tuple)):
             inputs = batch[0].to(device)
@@ -40,8 +45,13 @@ def compute_loss(model, dataloader, device, loss_fn=None, return_perplexity=True
             loss = outputs.loss
 
         # Accumulate total loss and tokens
-        total_loss += loss.item() * inputs.numel()
-        total_tokens += inputs.numel()
+        if attention_mask is not None:
+            num_tokens = attention_mask.sum().item()
+        else:
+            num_tokens = inputs.numel()
+
+        total_loss += loss.item() * num_tokens
+        total_tokens += num_tokens
 
     # Avoid division by zero
     if total_tokens == 0:
