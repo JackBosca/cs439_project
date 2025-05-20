@@ -8,7 +8,7 @@ from optimization.training import train_epoch
 from optimization.evaluation import compute_loss
 from sharpness.sharpness import compute_epsilon_hessian_sharpness, power_iteration_hessian
 
-def run_experiment(config, optimizer_class, lr, batch_size, epochs=5, shuffle_mode='random'):
+def run_experiment(config, optimizer_class, lr, batch_size, epochs=5, rand_dir=True, shuffle_mode='random'):
     # Initialize tokenizer
     tokenizer, vocab_size = get_tokenizer(config.model_name)
     config.tokenizer = tokenizer  # Make tokenizer available in config
@@ -66,7 +66,8 @@ def run_experiment(config, optimizer_class, lr, batch_size, epochs=5, shuffle_mo
 
     base_loss = val_loss
     sharpness, _ = compute_epsilon_hessian_sharpness(
-        model, train_loader, loss_fn, eigenvector, epsilon=1e-3, num_samples=3, base_loss=base_loss, device=config.device
+        model, train_loader, loss_fn, eigenvector, epsilon=1e-3, num_samples=3, 
+        rand_dir=rand_dir, base_loss=base_loss, device=config.device
     )
 
     print(f"Hessian λ_max: {lambda_max:.4f}")

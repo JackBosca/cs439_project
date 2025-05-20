@@ -210,7 +210,7 @@ def power_iteration_hessian(model, dataloader, device,
     return hv_norm.item(), v
 
 def compute_epsilon_hessian_sharpness(model, dataloader, loss_fn, v,
-                                      epsilon=1e-3, num_samples=1, base_loss=None, device='cpu'):
+                                      epsilon=1e-3, num_samples=1, rand_dir=False, base_loss=None, device='cpu'):
     """
     Compute the sharpness of the model by evaluating the loss on perturbed parameters.
     Args:
@@ -220,6 +220,7 @@ def compute_epsilon_hessian_sharpness(model, dataloader, loss_fn, v,
         v: The largest eigenvector of the Hessian.
         epsilon: Perturbation size.
         num_samples: Number of samples to average over.
+        rand_dir: If True, use a random direction instead of the largest eigenvector.
         base_loss: The base loss of the model.
         device: Device to perform computations on. ('cuda' or 'cpu')
     Returns:
@@ -238,6 +239,14 @@ def compute_epsilon_hessian_sharpness(model, dataloader, loss_fn, v,
     sharpness_values = []
     for _ in tqdm(range(num_samples)):
         # Generate a random perturbation vector
+        if rand_dir:
+            v = torch.randn_like(theta)
+            v /= v.norm()
+        else:
+            # Use the largest eigenvector of the Hessian
+            v = v / v.norm()
+        
+        # Perturb the model parameters
         delta = epsilon * v 
         perturbed_theta = theta + delta
 
