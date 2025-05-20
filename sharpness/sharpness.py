@@ -156,7 +156,7 @@ def batch_averaged_hvp(model, dataloader, params, v, device, num_batches=3):
     return hv_acc / num_batches
 
 def power_iteration_hessian(model, dataloader, device,
-                            num_iters=30, num_batches=3, tol=1e-2):
+                            num_iters=20, num_batches=3, tol=1e-2):
     """Compute the largest eigenvalue of the Hessian using power iteration.
     Args:
         model: The model to evaluate. (e.g., DistilGPT2)
@@ -259,7 +259,7 @@ def compute_epsilon_hessian_sharpness(model, dataloader, loss_fn, v,
                                           return_perplexity=False, max_batches=3)
 
         # Compute the relative increase in loss and append to the list
-        rel_increase = ((perturbed_loss - base_loss) / (1 + base_loss)) * 100
+        rel_increase = ((perturbed_loss - base_loss) /  base_loss) * 100
         sharpness_values.append(rel_increase)
 
     # Restore original weights
@@ -267,3 +267,84 @@ def compute_epsilon_hessian_sharpness(model, dataloader, loss_fn, v,
 
     # Return the maximum sharpness value and the base loss
     return max(sharpness_values), base_loss
+
+def check_sharpness_approximation(model, dataloader, v, lambda_max, epsilon=1e-3, device='cpu'):
+    """
+    Check the sharpness approximation using the largest eigenvector of the Hessian.
+    Args:
+        model: The model to evaluate. (e.g., DistilGPT2)
+        dataloader: DataLoader for the dataset.
+        v: The largest eigenvector of the Hessian.
+        lambda_max: The largest eigenvalue of the Hessian.
+        epsilon: Perturbation size.
+        device: Device to perform computations on. ('cuda' or 'cpu')
+    Returns:
+        measured_rel_increase: The measured relative increase in loss.
+        predicted_rel_increase: The predicted relative increase in loss.
+        linear_term: The linear term in the approximation.
+        quad_term: The quadratic term in the approximation.
+    """
+    model.eval()
+    
+    # Flatten current parameters
+    theta = parameters_to_vector(model.parameters()).detach().to(device)
+
+    # Compute base loss and gradient
+    inputs_list = []
+    attention_masks_list = []
+
+    # Just 1 batch is enough for a check
+    for batch in dataloader:
+        if isinstance(batch, (tuple, list)):
+            inputs = batch[0].to(device)
+            attention_mask = batch[1].to(device) if len(batch) > 1 else None
+        else:
+            inputs = batch.to(device)
+            attention_mask = None
+        inputs_list.append(inputs)
+        attention_masks_list.append(attention_mask)
+        break  # only one batch
+
+    inputs = inputs_list[0]
+    attention_mask = attention_masks_list[0]
+
+    # Forward and compute loss
+    outputs = model(inputs, attention_mask=attention_mask, labels=inputs)
+    loss = outputs.loss
+    base_loss = loss.item()
+
+    # Compute gradient
+    grads = torch.autograd.grad(loss, model.parameters(), create_graph=False)
+    grad_vec = parameters_to_vector(grads).detach()
+
+    # Perturb along v
+    delta = epsilon * v
+    perturbed_theta = theta + delta
+    vector_to_parameters(perturbed_theta, model.parameters())
+
+    # Compute perturbed loss
+    with torch.no_grad():
+        outputs_perturbed = model(inputs, attention_mask=attention_mask, labels=inputs)
+        perturbed_loss = outputs_perturbed.loss.item()
+
+    # Restore original parameters
+    vector_to_parameters(theta, model.parameters())
+
+    # Compute terms
+    linear_term = grad_vec @ delta
+    quad_term = 0.5 * epsilon**2 * lambda_max
+
+    measured_rel_increase = (perturbed_loss - base_loss) / base_loss
+    predicted_rel_increase = (linear_term + quad_term) / base_loss
+
+    print(f"Measured relative loss increase: {measured_rel_increase * 100:.2f}%")
+    print(f"Predicted relative loss increase: {predicted_rel_increase.item() * 100:.2f}%")
+    print(f"Linear term: {linear_term.item():.4e}")
+    print(f"Quadratic term (0.5 * eps^2 * lambda_max): {quad_term:.4e}")
+
+    return {
+        "measured": measured_rel_increase,
+        "predicted": predicted_rel_increase.item(),
+        "linear_term": linear_term.item(),
+        "quad_term": quad_term
+    }
