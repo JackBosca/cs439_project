@@ -6,7 +6,7 @@ from data.preprocessing import load_and_preprocess_data
 from models.models_utils import get_model, get_tokenizer
 from optimization.training import train_epoch
 from optimization.evaluation import compute_loss
-from sharpness.sharpness import compute_epsilon_hessian_sharpness, power_iteration_hessian
+from sharpness.sharpness import compute_epsilon_hessian_sharpness, power_iteration_hessian, check_sharpness_approximation
 
 def run_experiment(config, optimizer_class, lr, batch_size, epochs=5, rand_dir=True, shuffle_mode='random'):
     # Initialize tokenizer
@@ -72,6 +72,11 @@ def run_experiment(config, optimizer_class, lr, batch_size, epochs=5, rand_dir=T
 
     print(f"Hessian λ_max: {lambda_max:.4f}")
     print(f"Sharpness: {sharpness:.2f}%")
+
+    # Check sharpness approximation
+    _ = check_sharpness_approximation(
+        model, train_loader, eigenvector, lambda_max, epsilon=1e-3, device=config.device
+    )
 
     # Results dictionary
     results = {
