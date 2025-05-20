@@ -1,5 +1,6 @@
 import torch 
 from torch.nn.utils import parameters_to_vector, vector_to_parameters
+from tqdm import tqdm
 
 from optimization.evaluation import compute_loss
 
@@ -95,7 +96,8 @@ def hessian_vector_product(loss, params, v):
     grad_dot_v = torch.dot(grad_vector, v)
 
     # Compute the Hessian-vector product
-    hessian_vector = torch.autograd.grad(grad_dot_v, params, retain_graph=True)
+    # hessian_vector = torch.autograd.grad(grad_dot_v, params, retain_graph=True)
+    hessian_vector = torch.autograd.grad(grad_dot_v, params)
 
     # Convert the Hessian-vector product to a vector
     return parameters_to_vector(hessian_vector)
@@ -115,24 +117,29 @@ def batch_averaged_hvp(model, dataloader, params, v, device, num_batches=3):
     # Initialize the Hessian-vector product accumulator
     hv_acc = torch.zeros_like(v, device=device)
     it = iter(dataloader)
+
     for _ in range(num_batches):
         try:
-            inputs, attention_mask = next(it)
+            batch = next(it)
         except StopIteration:
             # If we reach the end of the iterator, reset it
             it = iter(dataloader)
-            inputs, attention_mask = next(it)
+            batch = next(it)
 
-        # Move inputs and attention_mask to the specified device
-        inputs = inputs.to(device)
-        attention_mask = attention_mask.to(device)
+        # Handle both tuple and non-tuple batches and move to device
+        if isinstance(batch, (tuple, list)):
+            inputs = batch[0].to(device)
+            attention_mask = batch[1].to(device) if len(batch) > 1 else None
+        else:
+            inputs = batch.to(device)
+            attention_mask = None
         
         # Disable flash attention and math for the model
-        with torch.nn.attention.sdpa_kernel(
-                enable_flash=False,
-                enable_math=True,
-                enable_mem_efficient=False
-            ):
+        with torch.backends.cuda.sdp_kernel(
+            enable_flash=False,
+            enable_math=True,
+            enable_mem_efficient=False
+        ):
             outputs = model(
                 input_ids=inputs,
                 attention_mask=attention_mask,
@@ -162,6 +169,10 @@ def power_iteration_hessian(model, dataloader, device,
         lambda_max: The largest eigenvalue of the Hessian.
         v: The corresponding eigenvector.
     """
+    # Move model to the specified device
+    model.to(device)
+
+    # Set the model to evaluation mode
     model.eval()
     params = list(model.parameters())
 
@@ -180,15 +191,17 @@ def power_iteration_hessian(model, dataloader, device,
     v /= v.norm()
 
     prev_hv_norm = None
-    for i in range(num_iters):
+    for i in tqdm(range(num_iters)):
         # Compute the Hessian-vector product and normalize the vector
         hv = batch_averaged_hvp(model, dataloader, params, v, device, num_batches)
-        hv_norm = hv.norm()
-        v = hv / (hv_norm + 1e-12)
+
+        with torch.no_grad():
+            hv_norm = hv.norm()
+            v = hv / (hv_norm + 1e-12)
 
         # Check for convergence
         if prev_hv_norm is not None and abs(hv_norm.item() - prev_hv_norm) < tol:
-            print(f"Converged at iteration {i + 1} with eigenvalue ≈ {hv_norm.item():.4f}")
+            print(f"Converged at iteration {i + 1} with eigenvalue ≈ {hv_norm.item():.4f} \n")
             break
 
         # Save the current Hessian-vector product norm for the next iteration
@@ -197,7 +210,7 @@ def power_iteration_hessian(model, dataloader, device,
     return hv_norm.item(), v
 
 def compute_epsilon_hessian_sharpness(model, dataloader, loss_fn, v,
-                                      epsilon=1e-3, num_samples=10, device='cpu'):
+                                      epsilon=1e-3, num_samples=1, base_loss=None, device='cpu'):
     """
     Compute the sharpness of the model by evaluating the loss on perturbed parameters.
     Args:
@@ -207,6 +220,7 @@ def compute_epsilon_hessian_sharpness(model, dataloader, loss_fn, v,
         v: The largest eigenvector of the Hessian.
         epsilon: Perturbation size.
         num_samples: Number of samples to average over.
+        base_loss: The base loss of the model.
         device: Device to perform computations on. ('cuda' or 'cpu')
     Returns:
         sharpness: The maximum relative increase in loss due to perturbations.
@@ -217,12 +231,12 @@ def compute_epsilon_hessian_sharpness(model, dataloader, loss_fn, v,
     # Convert the model parameters to a vector
     theta = parameters_to_vector(model.parameters()).detach().to(device)
 
-    ## Compute the base loss
-    # base_loss = evaluate_loss(model, dataloader, loss_fn, device)
-    base_loss = compute_loss(model, dataloader, device, loss_fn=loss_fn, return_perplexity=False)
+    # Compute the base loss
+    if base_loss is None:
+        base_loss = compute_loss(model, dataloader, device, loss_fn=loss_fn, return_perplexity=False)
 
     sharpness_values = []
-    for _ in range(num_samples):
+    for _ in tqdm(range(num_samples)):
         # Generate a random perturbation vector
         delta = epsilon * v 
         perturbed_theta = theta + delta
@@ -231,8 +245,9 @@ def compute_epsilon_hessian_sharpness(model, dataloader, loss_fn, v,
         vector_to_parameters(perturbed_theta, model.parameters())
 
         # Compute the perturbed loss
-        # perturbed_loss = evaluate_loss(model, dataloader, loss_fn, device)
-        perturbed_loss = compute_loss(model, dataloader, device, loss_fn=loss_fn, return_perplexity=False)
+        with torch.no_grad():
+            perturbed_loss = compute_loss(model, dataloader, device, loss_fn=loss_fn, 
+                                          return_perplexity=False, max_batches=3)
 
         # Compute the relative increase in loss and append to the list
         rel_increase = ((perturbed_loss - base_loss) / (1 + base_loss)) * 100
