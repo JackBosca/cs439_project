@@ -1,3 +1,4 @@
+import torch
 from tqdm import tqdm
 
 def train_epoch(model, dataloader, optimizer, device, shuffle_mode='random'):
@@ -35,8 +36,10 @@ def train_epoch(model, dataloader, optimizer, device, shuffle_mode='random'):
 
         optimizer.zero_grad()
 
-        # Forward pass
-        outputs = model(inputs, attention_mask=attention_mask, labels=inputs)
+        with torch.amp.autocast(device_type=str(device), enabled=True, dtype=torch.float16):
+            # Forward pass
+            outputs = model(inputs, attention_mask=attention_mask, labels=inputs)
+
         loss = outputs.loss
 
         # Backward pass

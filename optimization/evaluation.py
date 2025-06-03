@@ -35,14 +35,15 @@ def compute_loss(model, dataloader, device, loss_fn=None, return_perplexity=True
             inputs = batch.to(device)
             attention_mask = None
 
-        # Forward pass
-        outputs = model(inputs, attention_mask=attention_mask, labels=inputs)
+        with torch.amp.autocast(device_type=str(device), enabled=True, dtype=torch.float16):
+            # Forward pass
+            outputs = model(inputs, attention_mask=attention_mask, labels=inputs)
 
-        if loss_fn is not None:
-            logits = outputs.logits
-            loss = loss_fn(logits.view(-1, logits.size(-1)), inputs.view(-1))
-        else:
-            loss = outputs.loss
+            if loss_fn is not None:
+                logits = outputs.logits
+                loss = loss_fn(logits.view(-1, logits.size(-1)), inputs.view(-1))
+            else:
+                loss = outputs.loss
 
         # Accumulate total loss and tokens
         if attention_mask is not None:
