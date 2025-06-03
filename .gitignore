@@ -49,3 +49,7 @@ Thumbs.db
 
 # VS Code-specific
 .vscode/
+
+# Custom
+exp_results/
+exp_plots/
