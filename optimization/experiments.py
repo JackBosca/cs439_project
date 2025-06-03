@@ -99,6 +99,7 @@ def run_experiment(config, optimizer_class, lr, weight_decay, batch_size, epochs
         'val_perplexity': val_perplexity,
         'optimizer': optimizer_class.__name__,
         'lr': lr,
+        'weight_decay': weight_decay,
         'batch_size': batch_size,
         'shuffle_mode': shuffle_mode,
         'train_loss_history': train_losses,
