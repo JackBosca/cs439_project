@@ -7,8 +7,22 @@ from models.models_utils import get_model, get_tokenizer
 from optimization.training import train_epoch
 from optimization.evaluation import compute_loss
 from sharpness.sharpness import compute_epsilon_hessian_sharpness, power_iteration_hessian, check_sharpness_approximation
-
-def run_experiment(config, optimizer_class, lr, batch_size, epochs=5, rand_dir=True, shuffle_mode='random'):
+ 
+def run_experiment(config, optimizer_class, lr, weight_decay, batch_size, epochs=5, rand_dir=True, shuffle_mode='random'):
+    """
+    Run a training experiment with the specified configuration and optimizer.
+    Args:
+        config: Configuration object containing model and training parameters.
+        optimizer_class: Optimizer class to use (e.g., torch.optim.Adam).
+        lr: Learning rate for the optimizer.
+        weight_decay: Weight decay for the optimizer.
+        batch_size: Batch size for training and validation.
+        epochs: Number of epochs to train the model.
+        rand_dir: Whether to use random direction for sharpness estimation.
+        shuffle_mode: Mode for shuffling data ('random' or 'sequential').
+    Returns:
+        results: Dictionary containing training and validation losses, perplexity, optimizer details, and sharpness metrics.
+    """
     # Initialize tokenizer
     tokenizer, vocab_size = get_tokenizer(config.model_name)
     config.tokenizer = tokenizer  # Make tokenizer available in config
@@ -39,7 +53,7 @@ def run_experiment(config, optimizer_class, lr, batch_size, epochs=5, rand_dir=T
     
     # Initialize model
     model = get_model(config.model_name, vocab_size, config.device)
-    optimizer = optimizer_class(model.parameters(), lr=lr)
+    optimizer = optimizer_class(model.parameters(), lr=lr, weight_decay=weight_decay)
     
     # Training loop
     train_losses = []
