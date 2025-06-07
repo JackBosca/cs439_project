@@ -35,7 +35,7 @@ def create_loaders(config, batch_size=4):
         test_loader: DataLoader for the test dataset.
     """
     # Load data
-    train_texts, val_texts, test_texts = load_and_preprocess_data()
+    train_texts, val_texts, test_texts = load_and_preprocess_data(config)
 
     # Create datasets
     train_dataset = TextDataset(train_texts, config.tokenizer, config.max_length)
