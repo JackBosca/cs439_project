@@ -1,7 +1,7 @@
 # import torch
 import numpy as np
 from torch.utils.data import DataLoader
-
+from utils.misc import create_loaders
 from data.datasets import TextDataset
 from data.preprocessing import load_and_preprocess_data
 from models.models_utils import get_model, get_tokenizer
@@ -31,27 +31,7 @@ def run_experiment(config, optimizer_class, lr, weight_decay, batch_size, epochs
     config.vocab_size = vocab_size
 
     # Load data
-    train_texts, val_texts, _ = load_and_preprocess_data(config)
-    
-    # Create datasets
-    train_dataset = TextDataset(train_texts, tokenizer, config.max_length)
-    val_dataset = TextDataset(val_texts, tokenizer, config.max_length)
-    
-    # Create dataloaders
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=config.num_workers,
-        pin_memory=config.pin_memory
-    )
-    val_loader = DataLoader(
-        val_dataset,
-        batch_size=batch_size,
-        shuffle=False,
-        num_workers=config.num_workers,
-        pin_memory=config.pin_memory
-    )
+    train_loader, val_loader, _ = create_loaders(config, batch_size=batch_size)
     
     # Initialize model
     model = get_model(config.model_name, vocab_size, config.device)

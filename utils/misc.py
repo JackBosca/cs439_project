@@ -23,13 +23,12 @@ def set_seed(seed=42):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-def create_loaders(config, batch_size=4, shuffle=False):
+def create_loaders(config, batch_size=4):
     """
     Create data loaders for training, validation, and test datasets.
     Args:
         config: Configuration object containing model and data parameters.
         batch_size (int): Batch size for the data loaders.
-        shuffle (bool): Whether to shuffle the training data.
     Returns:
         train_loader: DataLoader for the training dataset.
         val_loader: DataLoader for the validation dataset.
@@ -37,20 +36,17 @@ def create_loaders(config, batch_size=4, shuffle=False):
     """
     # Load data
     train_texts, val_texts, test_texts = load_and_preprocess_data()
-    
-    # Get tokenizer
-    tokenizer, _ = get_tokenizer(config.model_name)
 
     # Create datasets
-    train_dataset = TextDataset(train_texts, tokenizer, config.max_length)
-    val_dataset = TextDataset(val_texts, tokenizer, config.max_length)
-    test_dataset = TextDataset(test_texts, tokenizer, config.max_length)
+    train_dataset = TextDataset(train_texts, config.tokenizer, config.max_length)
+    val_dataset = TextDataset(val_texts, config.tokenizer, config.max_length)
+    test_dataset = TextDataset(test_texts, config.tokenizer, config.max_length)
     
     # Create dataloaders
     val_loader = DataLoader(
         val_dataset,
         batch_size=batch_size,
-        shuffle=shuffle,
+        shuffle=False,
         num_workers=config.num_workers,
         pin_memory=config.pin_memory
     )
@@ -58,7 +54,7 @@ def create_loaders(config, batch_size=4, shuffle=False):
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
-        shuffle=shuffle,
+        shuffle=False,
         num_workers=config.num_workers,
         pin_memory=config.pin_memory
     )
@@ -66,7 +62,7 @@ def create_loaders(config, batch_size=4, shuffle=False):
     test_loader = DataLoader(
         test_dataset,
         batch_size=batch_size,
-        shuffle=shuffle,
+        shuffle=False,
         num_workers=config.num_workers,
         pin_memory=config.pin_memory
     )
