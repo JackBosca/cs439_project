@@ -107,7 +107,7 @@ def run_experiment(config, optimizer_class, lr, weight_decay, batch_size, epochs
     
     return results, model
 
-def plot_experiment(model_sb, model_lb, train_loader, val_loader, paths: np.array):
+def plot_experiment(model_sb, model_lb, train_loader, val_loader, device, paths: np.array):
     """
     Plot the results of the experiment by visualizing segments and 2D representations of the model parameters.
     Args:
@@ -122,7 +122,7 @@ def plot_experiment(model_sb, model_lb, train_loader, val_loader, paths: np.arra
     
     # Visualize segments and 2D representations
     nn = 100
-    visual_segment(model_sb, model_lb, nn, compute_loss, train_loader, val_loader, save_path=paths[0])
+    visual_segment(model_sb, model_lb, nn, compute_loss, train_loader, val_loader, save_path=paths[0], device=device)
 
     # Generate orthogonal directions for visualization for both models
     a, b = generate_filter_normalized_vectors(model_sb)
