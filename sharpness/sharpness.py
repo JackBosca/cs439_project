@@ -97,17 +97,17 @@ def power_iteration_hessian(model, dataloader, device,
     """
     # Move model to the specified device
     model.to(device)
-
+ 
     # Set the model to evaluation mode
     model.eval()
     params = list(model.parameters())
 
-    # Normalize the parameters layer by layer
-    for _, param in model.named_parameters():
-        if param.requires_grad and param.dim() > 1:
-            norm = param.data.norm()
-            if norm > 0:
-                param.data = param.data / norm
+    # # Normalize the parameters layer by layer
+    # for _, param in model.named_parameters():
+    #     if param.requires_grad and param.dim() > 1:
+    #         norm = param.data.norm()
+    #         if norm > 0:
+    #             param.data = param.data / norm
 
     # Sum the number of elements in all parameters
     dim = sum(p.numel() for p in params)
