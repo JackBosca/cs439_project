@@ -14,7 +14,7 @@ Our primary objectives include:
 
 ## 📦 Dataset
 
-- Wikitext-2 (subset): A small dataset from the WikiText family with over 2 million tokens. Suitable for benchmarking language models.
+- Wikitext-2 (a small subset): A small dataset from the WikiText family with over 2 million tokens. Suitable for benchmarking language models.
 - Preprocessing: Conducted via `data/preprocessing.py`, which tokenizes and chunks text using the HuggingFace tokenizer for DistilGPT2.
 
 ## 🤖 Model
@@ -46,7 +46,7 @@ Implemented in `visualization/visual.py`, our approach visualizes 2D loss landsc
 
 We use techniques inspired by:
 - Li et al., "Visualizing the Loss Landscape of Neural Nets" (2018);
-- Papers in `literature/loss_landscapes.pdf`, `flatness_viz_optiML.pdf`.
+- Papers in `literature/`.
 
 The visualizations demonstrate the relative flatness or sharpness of minima under different settings.
 
@@ -55,7 +55,7 @@ The visualizations demonstrate the relative flatness or sharpness of minima unde
 Implemented in `sharpness/sharpness.py`:
 
 1. Epsilon Sharpness
-- Follows the definition: 
+- Follows the definition: `Sharpness_ε = max_{||δ|| ≤ ε} L(θ + δ) − L(θ)`;
 - Evaluated for multiple epsilons per configuration.
 
 2. Hessian Sharpness
@@ -83,21 +83,22 @@ cs439_project/
 ├── utils/                   # Helper functions, config loading, plotting
 ├── visualization/           # Loss landscape visualizations
 ├── results.ipynb            # Evaluation and visualization
-├── test_experiments.ipynb   # Test experiments
 └── README.md                # This file
 ```
 
 ## 🚀 Running the Project
 
 1. Environment Setup
-
+```
 pip install -r requirements.txt
+```
 
-
-5. Explore Results
+2. Explore Results
 Open and run `results.ipynb` to view evaluation plots and metrics, visualizations of loss landscapes and sharpness metrics.
 
 ## 📖 References
 Literature in `literature/`.
+
+***
 
 © 2025 — by Jacopo Boscariol, Leonardo De Novellis, Salya Amanda Diallo.
