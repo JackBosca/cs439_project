@@ -2,6 +2,7 @@ from transformers import GPT2LMHeadModel
 from transformers import GPT2Tokenizer
 
 def get_model(model_name, tokenizer_len, device):
+    """Initialize and configure the GPT-2 model"""
     model = GPT2LMHeadModel.from_pretrained(model_name)
     model.resize_token_embeddings(tokenizer_len)
     model = model.to(device)
