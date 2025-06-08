@@ -70,7 +70,7 @@ def visual_segment(init_model, final_model, n, loss_fn, train_loader, val_loader
     alphas = np.linspace(-0.5, 1.5, n + 1)
     losses_val = []
     losses_train = []
-
+ 
     theta_0 = flatten_params(init_model)
     theta_f = flatten_params(final_model)
     currModel = copy.deepcopy(init_model)
@@ -78,9 +78,10 @@ def visual_segment(init_model, final_model, n, loss_fn, train_loader, val_loader
     for alpha in alphas:
         theta = theta_0 + alpha * (theta_f - theta_0)
         set_flat_params(currModel, theta)
+        currModel.eval()
 
-        loss_val, perp_val = loss_fn(currModel, val_loader, device)
-        loss_train, perp_train = loss_fn(currModel, train_loader, device)
+        loss_val, _ = loss_fn(currModel, val_loader, device)
+        loss_train, _ = loss_fn(currModel, train_loader, device)
         losses_val.append(loss_val)
         losses_train.append(loss_train)
 
@@ -171,9 +172,11 @@ def visual_2D(model, a, b, loss_fn, train_loader, n=50, range_val=1.0, save_path
         for j, beta in enumerate(betas):
             theta = theta_0 + alpha * a + beta * b
             set_flat_params(currModel, theta)
-            currModel.to(device)
+            currModel.eval()
 
-            loss, _ = loss_fn(currModel, train_loader, device)
+            with torch.no_grad():
+                loss, _ = loss_fn(currModel, train_loader, device)
+
             loss_grid[i, j] = loss
 
     A, B = np.meshgrid(alphas, betas)
@@ -187,7 +190,7 @@ def visual_2D(model, a, b, loss_fn, train_loader, n=50, range_val=1.0, save_path
     cbar.set_label('Loss')
     plt.xlabel(r'Direction $\alpha$')
     plt.ylabel(r'Direction $\beta$')
-    plt.title('Loss Surface Contours')
+    # plt.title('Loss Surface Contours')
     # plt.grid(True)
     plt.tight_layout()
 
