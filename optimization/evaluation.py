@@ -2,7 +2,7 @@ import torch
 from tqdm import tqdm
 
 @torch.no_grad()
-def compute_loss(model, dataloader, device, loss_fn=None, return_perplexity=True, max_batches=None):
+def compute_loss(model, dataloader, device, loss_fn=None, return_perplexity=True, max_batches=None, show_progress=True):
     """
     Compute the average loss of the model.
     Args:
@@ -22,7 +22,8 @@ def compute_loss(model, dataloader, device, loss_fn=None, return_perplexity=True
     total_loss = 0.0
     total_tokens = 0
 
-    for i, batch in enumerate(tqdm(dataloader, desc="Evaluating", leave=False)):
+    iterator = tqdm(dataloader, desc="Evaluating", leave=False) if show_progress else dataloader
+    for i, batch in enumerate(iterator):
         # Check if max_batches is reached
         if max_batches is not None and i >= max_batches:
             break

@@ -234,10 +234,10 @@ def compute_epsilon_hessian_sharpness(model, dataloader, loss_fn, v,
 
     # Compute the base loss
     if base_loss is None:
-        base_loss = compute_loss(model, dataloader, device, loss_fn=loss_fn, return_perplexity=False)
+        base_loss = compute_loss(model, dataloader, device, loss_fn=loss_fn, return_perplexity=False, show_progress=False)
 
     sharpness_values = []
-    for _ in tqdm(range(num_samples)):
+    for _ in tqdm(range(num_samples), desc="Perturbation samples"):
         # Generate a random perturbation vector
         if rand_dir:
             v = torch.randn_like(theta)
@@ -256,7 +256,7 @@ def compute_epsilon_hessian_sharpness(model, dataloader, loss_fn, v,
         # Compute the perturbed loss
         with torch.no_grad():
             perturbed_loss = compute_loss(model, dataloader, device, loss_fn=loss_fn, 
-                                          return_perplexity=False, max_batches=3)
+                                          return_perplexity=False, max_batches=3, show_progress=False)
 
         # Compute the relative increase in loss and append to the list
         rel_increase = ((perturbed_loss - base_loss) /  base_loss) * 100
