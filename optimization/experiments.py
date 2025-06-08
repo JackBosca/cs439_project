@@ -121,7 +121,7 @@ def plot_experiment(model_sb, model_lb, train_loader, val_loader, device, paths:
     assert len(paths)==3
     
     # Visualize segments and 2D representations
-    nn = 100
+    nn = 30
     visual_segment(model_sb, model_lb, nn, compute_loss, train_loader, val_loader, save_path=paths[0], device=device)
 
     # Generate orthogonal directions for visualization for both models
