@@ -9,7 +9,7 @@ def train_epoch(model, dataloader, optimizer, device, shuffle_mode='random'):
         dataloader: DataLoader for the dataset.
         optimizer: Optimizer for the model.
         device: Device to perform computations on. ('cuda' or 'cpu')
-        shuffle_mode: Mode for shuffling data. ('random', 'sorted', or None)
+        shuffle_mode: Mode for shuffling data. ('random', 'sorted')
     Returns:
         avg_loss: The average loss for the epoch.
     """
