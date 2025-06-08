@@ -156,7 +156,7 @@ def batch_averaged_hvp(model, dataloader, params, v, device, num_batches=3):
     return hv_acc / num_batches
 
 def power_iteration_hessian(model, dataloader, device,
-                            num_iters=20, num_batches=3, tol=1e-2):
+                            num_iters=30, num_batches=3, tol=1e-2):
     """Compute the largest eigenvalue of the Hessian using power iteration.
     Args:
         model: The model to evaluate. (e.g., DistilGPT2)
@@ -191,7 +191,7 @@ def power_iteration_hessian(model, dataloader, device,
     v /= v.norm()
 
     prev_hv_norm = None
-    for i in tqdm(range(num_iters)):
+    for i in tqdm(range(num_iters), desc="Power Iteration"):
         # Compute the Hessian-vector product and normalize the vector
         hv = batch_averaged_hvp(model, dataloader, params, v, device, num_batches)
 
