@@ -5,7 +5,6 @@ import torch
 from torch.utils.data import DataLoader
 from data.preprocessing import load_and_preprocess_data
 from data.datasets import TextDataset
-from models.models_utils import get_tokenizer
 
 # Set seed
 def set_seed(seed=42):
