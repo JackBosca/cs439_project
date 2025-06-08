@@ -61,7 +61,7 @@ Implemented in `sharpness/sharpness.py`:
 2. Hessian Sharpness
 - Estimates the top eigenvalue of the Hessian via power iteration, indicating the local curvature at the loss minimum.
 
-Code: `sharpness.py`
+Code: `sharpness.py`.
 
 ## 📊 Evaluation & Results
 
@@ -93,12 +93,11 @@ cs439_project/
 pip install -r requirements.txt
 ```
 
-2. Explore Results
-Open and run `results.ipynb` to view evaluation plots and metrics, visualizations of loss landscapes and sharpness metrics.
+2. Explore Results: open and run `results.ipynb` to view evaluation plots and metrics, visualizations of loss landscapes and sharpness metrics.
 
 ## 📖 References
 Literature in `literature/`.
 
 ***
 
-© 2025 — by Jacopo Boscariol, Leonardo De Novellis, Salya Amanda Diallo.
+© 2025 — by Jacopo Boscariol, Leonardo De Novellis, Salya Amanda Diallo. Licensed under the [MIT License](./LICENSE).
