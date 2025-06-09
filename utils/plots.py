@@ -11,7 +11,7 @@ def plot_loss_curves(results_list, save_path=None, fname=None):
     # Loop through each result and assign color
     for idx, results in enumerate(results_list):
         color = color_map(idx % num_colors)
-        label_base = f"{results['optimizer']}, lr={results['lr']}, wd={results['weight_decay']}, bs={results['batch_size']}"
+        label_base = f"{results['optimizer']}, lr={results['lr']}, wd={results['weight_decay']}, bs={results['batch_size']}, order={results['shuffle_mode']}"
 
         # Plot train and val with same color, different styles
         plt.plot(results['train_loss_history'], label=f"Train - {label_base}", color=color, linestyle='-')
