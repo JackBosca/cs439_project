@@ -2,7 +2,7 @@
 
 ## 📚 Overview
 
-This project is part of the **EPFL** course *CS-439: Optimization for machine learning*. It investigates the optimization landscapes of large language models (LLMs), specifically focusing on DistilGPT2 fine-tuned on the Wikitext-2 dataset. By analyzing how different training configurations affect convergence and generalization, we visualize and quantify the sharpness and structure of the resulting loss landscapes.
+This project is part of the **EPFL** course *CS-439: Optimization for machine learning*. It investigates the optimization landscapes of large language models (LLMs), specifically focusing on DistilGPT2 fine-tuned on the Wikitext-2 dataset. By analyzing how different training configurations affect convergence and generalization, we visualize and quantify the sharpness and structure of the resulting loss landscapes. To access the saved models for each experiment, you can download them from [Models](https://drive.google.com/drive/folders/1b3yby67qetFfJEjavIY0Xy7pooWZ7mnD?usp=drive_link) in `exp_models/`.
 
 Our primary objectives include:
 - Exploring how hyperparameters (batch size, learning rate, weight decay, optimizer) influence the optimization landscape;
