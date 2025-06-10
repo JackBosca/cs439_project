@@ -93,7 +93,7 @@ cs439_project/
 pip install -r requirements.txt
 ```
 
-2. Explore Results: open and run `results.ipynb` to view evaluation plots and metrics, visualizations of loss landscapes and sharpness metrics.
+2. Explore Results: open and run `results_bs.ipynb` (batch size experiments), `results_opt.ipynb` (optimizers experiments) and `results_order.ipynb` (data order experiments) to view evaluation plots and metrics, visualizations of loss landscapes and sharpness metrics.
 
 ## 📖 References
 Literature in `literature/`.
