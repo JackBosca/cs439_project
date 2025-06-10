@@ -25,7 +25,8 @@ def flatten_params(model):
     Returns:
         torch.Tensor: A 1D tensor containing all the parameters of the model.
     """
-    return torch.cat([param.data.view(-1) for param in model.parameters()])
+    with torch.no_grad():
+        return torch.cat([param.data.view(-1) for param in model.parameters()])
 
 def set_flat_params(model, flat_params):
     """
@@ -35,10 +36,11 @@ def set_flat_params(model, flat_params):
         flat_params (torch.Tensor): A 1D tensor containing the parameters to set in the model.
     """
     idx = 0
-    for param in model.parameters():
-        numel = param.data.numel()
-        param.data.copy_(flat_params[idx:idx + numel].view_as(param.data))
-        idx += numel
+    with torch.no_grad():
+        for param in model.parameters():
+            numel = param.data.numel()
+            param.data.copy_(flat_params[idx:idx + numel].view_as(param.data))
+            idx += numel
 
 def generate_orthogonal_directions(model):
     """
