@@ -46,47 +46,6 @@ def run_experiment(config, optimizer_class, lr, weight_decay, batch_size, epochs
         val_losses.append(val_loss)
         
         print(f"Epoch {epoch+1}/{epochs} - Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}, Val Perplexity: {val_perplexity:.2f}")
-    
-    # # Sharpness analysis
-    # print("Estimating Hessian sharpness...")
-
-    # # Use cross entropy as loss_fn
-    # loss_fn = torch.nn.CrossEntropyLoss(ignore_index=tokenizer.pad_token_id)
-
-    # lambda_max, eigenvector = power_iteration_hessian(
-    #     model, train_loader, device=config.device, num_iters=20, num_batches=3
-    # )
-
-    # base_loss = val_loss
-    # sharpness, _ = compute_epsilon_hessian_sharpness(
-    #     model, train_loader, loss_fn, eigenvector, epsilon=1e-3, num_samples=3, 
-    #     rand_dir=rand_dir, base_loss=base_loss, device=config.device
-    # )
-
-    # print(f"Hessian λ_max: {lambda_max:.4f}")
-    # print(f"Sharpness: {sharpness:.2f}%")
-
-    # # Check sharpness approximation
-    # _ = check_sharpness_approximation(
-    #     model, train_loader, eigenvector, lambda_max, epsilon=1e-3, device=config.device
-    # )
-
-    # # Results dictionary
-    # results = {
-    #     'train_loss': train_losses[-1],
-    #     'val_loss': val_losses[-1],
-    #     'val_perplexity': val_perplexity,
-    #     'optimizer': optimizer_class.__name__,
-    #     'lr': lr,
-    #     'weight_decay': weight_decay,
-    #     'batch_size': batch_size,
-    #     'shuffle_mode': shuffle_mode,
-    #     'train_loss_history': train_losses,
-    #     'val_loss_history': val_losses,
-    #     'hessian_lambda_max': lambda_max,
-    #     'sharpness': sharpness,
-    #     'sharpness_base_loss': base_loss
-    # }
 
     # Results dictionary
     results = {
