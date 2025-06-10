@@ -152,17 +152,17 @@ def visual_2D(model, a, b, loss_fn, train_loader, n=50, range_val=1.0, save_path
     theta_0 = flatten_params(model).to(device)
     currModel = copy.deepcopy(model).to(device)
 
-    for i, alpha in enumerate(alphas):
-        for j, beta in enumerate(betas):
-            # Compute the parameters for the current point in the grid
-            theta = theta_0 + alpha * a + beta * b
-            set_flat_params(currModel, theta)
-            currModel.eval()
+    with torch.no_grad():
+        for i, alpha in enumerate(alphas):
+            for j, beta in enumerate(betas):
+                # Compute the parameters for the current point in the grid
+                theta = theta_0 + alpha * a + beta * b
+                set_flat_params(currModel, theta)
+                currModel.eval()
 
-            with torch.no_grad():
+                # Compute the loss for the current model
                 loss, _ = loss_fn(currModel, train_loader, device)
-
-            loss_grid[i, j] = loss
+                loss_grid[i, j] = loss
 
     A, B = np.meshgrid(alphas, betas)
     plt.figure(figsize=(8, 6))
