@@ -89,17 +89,18 @@ def visual_segment(init_model, final_model, n, loss_fn, train_loader, val_loader
     theta_f = flatten_params(final_model)
     currModel = copy.deepcopy(init_model)
     
-    for alpha in alphas:
-        # Interpolate parameters
-        theta = theta_0 + alpha * (theta_f - theta_0)
-        set_flat_params(currModel, theta)
-        currModel.eval()
+    with torch.no_grad():
+        for alpha in alphas:
+            # Interpolate parameters
+            theta = theta_0 + alpha * (theta_f - theta_0)
+            set_flat_params(currModel, theta)
+            currModel.eval()
 
-        # Compute losses for the current model
-        loss_val, _ = loss_fn(currModel, val_loader, device)
-        loss_train, _ = loss_fn(currModel, train_loader, device)
-        losses_val.append(loss_val)
-        losses_train.append(loss_train)
+            # Compute losses for the current model
+            loss_val, _ = loss_fn(currModel, val_loader, device)
+            loss_train, _ = loss_fn(currModel, train_loader, device)
+            losses_val.append(loss_val)
+            losses_train.append(loss_train)
 
     # Plotting
     plt.plot(alphas, losses_train, label='Train Loss', linestyle='-', color='#1b9e77')
@@ -212,30 +213,31 @@ def generate_filter_normalized_vectors(model):
     Returns:
         tuple: Two orthogonal tensors (a_flat, b_flat) representing directions in the parameter space.
     """
-    params = list(model.parameters())
-    
-    # Generate random vectors a and b with the same shape as the model parameters
-    a = [torch.randn_like(param) for param in params]
-    b = [torch.randn_like(param) for param in params]
-    eps = 1e-10
+    with torch.no_grad():
+        params = list(model.parameters())
+        
+        # Generate random vectors a and b with the same shape as the model parameters
+        a = [torch.randn_like(param) for param in params]
+        b = [torch.randn_like(param) for param in params]
+        eps = 1e-10
 
-    for i in range(len(params)):
-        model_norm = params[i].norm()
-        direction_a_norm = a[i].norm()
-        direction_b_norm = b[i].norm()
+        for i in range(len(params)):
+            model_norm = params[i].norm()
+            direction_a_norm = a[i].norm()
+            direction_b_norm = b[i].norm()
 
-        # Normalize a and b to the model's parameter norms
-        a[i] = a[i] * (model_norm / (eps + direction_a_norm))
-        b[i] = b[i] * (model_norm / (eps + direction_b_norm))
+            # Normalize a and b to the model's parameter norms
+            a[i] = a[i] * (model_norm / (eps + direction_a_norm))
+            b[i] = b[i] * (model_norm / (eps + direction_b_norm))
 
-    # Make b orthogonal to a (TO CHANGE)
-    for i in range(len(params)):
-        a_flat = a[i].view(-1)
-        b_flat = b[i].view(-1)
-        proj = (torch.dot(b_flat, a_flat) / (a_flat.norm()**2 + eps)) * a[i]
-        b[i] = b[i] - proj
+        # Make b orthogonal to a (TO CHANGE)
+        for i in range(len(params)):
+            a_flat = a[i].view(-1)
+            b_flat = b[i].view(-1)
+            proj = (torch.dot(b_flat, a_flat) / (a_flat.norm()**2 + eps)) * a[i]
+            b[i] = b[i] - proj
 
-    a_flat = flatten_vector_list(a)
-    b_flat = flatten_vector_list(b)
+        a_flat = flatten_vector_list(a)
+        b_flat = flatten_vector_list(b)
 
     return a_flat, b_flat
