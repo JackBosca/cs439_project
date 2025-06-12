@@ -46,7 +46,7 @@ Implemented in `visualization/visual.py`, our approach visualizes 2D loss landsc
 
 We use techniques inspired by:
 - Li et al., "Visualizing the Loss Landscape of Neural Nets" (2018);
-- Papers in `literature/`.
+- Other papers in `literature/`.
 
 The visualizations demonstrate the relative flatness or sharpness of minima under different settings.
 
@@ -55,7 +55,7 @@ The visualizations demonstrate the relative flatness or sharpness of minima unde
 Implemented in `sharpness/sharpness.py`:
 
 1. Epsilon Sharpness
-- Follows the definition: `Sharpness_ε = max_{||δ|| ≤ ε} L(θ + δ) − L(θ)`;
+- Follows the definition: `ε-sharpness = (L(θ + δ) − L(θ)) / L(θ)`;
 - Evaluated for multiple epsilons per configuration.
 
 2. Hessian Sharpness
