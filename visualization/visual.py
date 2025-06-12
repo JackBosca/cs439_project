@@ -230,7 +230,7 @@ def generate_filter_normalized_vectors(model):
             a[i] = a[i] * (model_norm / (eps + direction_a_norm))
             b[i] = b[i] * (model_norm / (eps + direction_b_norm))
 
-        # Make b orthogonal to a (TO CHANGE)
+        # Make b orthogonal to a
         for i in range(len(params)):
             a_flat = a[i].view(-1)
             b_flat = b[i].view(-1)
