@@ -63,12 +63,6 @@ Implemented in `sharpness/sharpness.py`:
 
 Code: `sharpness.py`.
 
-## 📊 Evaluation & Results
-
-- Evaluation routines in `optimization/evaluation.py`;
-- Experimental results stored as `.pt` files;
-- `results.ipynb`: Final evaluation plots and figures.
-
 ## 🗂️ Repository Structure
 
 ```
@@ -94,7 +88,9 @@ cs439_project/
 pip install -r requirements.txt
 ```
 
-2. Explore Results: open and run `results_bs-wd.ipynb` (batch size and weight decay experiments), `results_opt.ipynb` (optimizers experiments) and `results_order.ipynb` (data order experiments) to view evaluation plots and metrics, visualizations of loss landscapes and sharpness metrics.
+2. Explore Results: open and run `results_bs-wd.ipynb` (batch size and weight decay experiments), `results_opt.ipynb` (optimizers experiments) and `results_order.ipynb` (data order experiments) to view evaluation plots and metrics, visualizations of loss landscapes and sharpness metrics;
+
+3. Experimental results stored as `.pt` files.
 
 ## 📖 References
 Literature in `literature/`.
