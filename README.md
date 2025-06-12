@@ -82,8 +82,9 @@ cs439_project/
 ├── tests/                   # Testing scripts and experimental checkpoints
 ├── utils/                   # Helper functions, config loading, plotting
 ├── visualization/           # Loss landscape visualizations
-├── results.ipynb            # Evaluation and visualization
-└── README.md                # This file
+├── results_bs-wd.ipynb      # Batch size & weight decay experiment
+├── results_opt.ipynb        # AdamW optimizer experiment
+└── results_order.ipynb      # Data ordering experiment
 ```
 
 ## 🚀 Running the Project
